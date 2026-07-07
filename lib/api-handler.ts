@@ -10,15 +10,16 @@ let initialized = false;
 
 export async function ensureInit() {
   if (initialized) return;
-  initialized = true;
 
-  try {
-    if (process.env.MONGODB_URI) {
+  if (process.env.MONGODB_URI && mongoose.connection.readyState !== 1) {
+    try {
       await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+    } catch (e: any) {
+      console.warn('MongoDB connection failed:', e.message);
     }
-  } catch (e: any) {
-    console.warn('MongoDB connection failed:', e.message);
   }
+
+  initialized = true;
 
   try {
     if (getApps().length === 0 && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PROJECT_ID !== 'your-project-id') {

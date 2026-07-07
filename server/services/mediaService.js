@@ -24,7 +24,8 @@ exports.uploadImage = async (file, folder = 'dress') => {
     };
   }
 
-  const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '';
+  const baseUrl = process.env.BASE_URL || vercelUrl || `http://localhost:${process.env.PORT || 5000}`;
   return {
     url: `${baseUrl}/uploads/${file.filename}`,
     publicId: file.filename,
