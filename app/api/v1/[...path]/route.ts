@@ -832,14 +832,22 @@ def('wishlist', [':productId'], ['DELETE'], async (ctx) => {
 
 // ── HTTP Method Handlers ──
 async function handler(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  await ensureInit();
-  const { path: rawPath } = await params;
-  const segments = rawPath || [];
-  if (segments.length === 0) return NextResponse.json({ success: false, message: 'Route not found' }, { status: 404 });
-  const resource = segments[0];
-  const remaining = segments.slice(1);
-  return handleResource(request, resource, remaining, request.method);
+  try {
+    await ensureInit();
+    const { path: rawPath } = await params;
+    const segments = rawPath || [];
+    if (segments.length === 0) return NextResponse.json({ success: false, message: 'Route not found' }, { status: 404 });
+    const resource = segments[0];
+    const remaining = segments.slice(1);
+    return await handleResource(request, resource, remaining, request.method);
+  } catch (error: any) {
+    console.error('Unhandled route error:', error?.message || error);
+    return errorResponse(error);
+  }
 }
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export const GET = handler;
 export const POST = handler;

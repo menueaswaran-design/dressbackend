@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { initializeApp as initFirebaseAdmin, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { v2 as cloudinary } from 'cloudinary';
 import path from 'path';
 import fs from 'fs';
 
@@ -33,7 +34,6 @@ export async function ensureInit() {
     console.warn('Firebase initialization failed:', e.message);
   }
 
-  const cloudinary: any = (await import('cloudinary')).v2;
   try {
     if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_CLOUD_NAME !== 'your-cloud-name') {
       cloudinary.config({
