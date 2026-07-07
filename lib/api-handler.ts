@@ -46,7 +46,6 @@ export async function ensureInit() {
     console.warn('Cloudinary configuration failed:', e.message);
   }
 
-  await import('../server/models');
 }
 
 export class ApiError extends Error {
@@ -92,8 +91,12 @@ export async function verifyToken(request: NextRequest) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw ApiError.unauthorized('No token provided');
   }
-  const token = authHeader.split(' ')[1];
-  const decoded = await getAuth().verifyIdToken(token);
+  let decoded: any;
+  try {
+    decoded = await getAuth().verifyIdToken(authHeader.split(' ')[1]);
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired token');
+  }
 
   const AdminUser = mongoose.model('AdminUser');
   const adminUser = await AdminUser.findOne({ firebaseUid: decoded.uid });
@@ -109,8 +112,12 @@ export async function verifyCustomerToken(request: NextRequest) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw ApiError.unauthorized('No token provided');
   }
-  const token = authHeader.split(' ')[1];
-  const decoded = await getAuth().verifyIdToken(token);
+  let decoded: any;
+  try {
+    decoded = await getAuth().verifyIdToken(authHeader.split(' ')[1]);
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired token');
+  }
 
   const Customer = mongoose.model('Customer');
   let customer = await Customer.findOne({ firebaseUid: decoded.uid });
@@ -200,7 +207,10 @@ export async function parseBody(request: NextRequest) {
 
 export async function convertFormFile(file: File) {
   const buffer = Buffer.from(await file.arrayBuffer());
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+  const isVercel = !!process.env.VERCEL;
+  const uploadsDir = isVercel
+    ? '/tmp/uploads'
+    : path.join(process.cwd(), 'public', 'uploads');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }

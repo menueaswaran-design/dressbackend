@@ -143,7 +143,9 @@ async function handleResource(
 }
 
 function getModel(name: string) {
-  return mongoose.models[name] || (() => { throw new Error(`Model ${name} not registered`); })();
+  const model = mongoose.models[name];
+  if (!model) throw new Error(`Model ${name} not registered`);
+  return model;
 }
 
 // ── Auth ──
