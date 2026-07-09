@@ -47,3 +47,23 @@ exports.updateInstagram = async (data) => {
     { upsert: true, new: true }
   );
 };
+
+exports.updatePromotionalBanner = async (data) => {
+  const clean = { ...data };
+  if (clean.collection === '' || clean.collection === null) {
+    clean.collection = undefined;
+  }
+  return HomepageSection.findOneAndUpdate(
+    { sectionType: 'promotional_banner' },
+    { $set: { promotionalBanner: clean } },
+    { upsert: true, new: true }
+  );
+};
+
+exports.updateBrandStory = async (data) => {
+  return HomepageSection.findOneAndUpdate(
+    { sectionType: 'brand_story' },
+    { $set: { brandStory: data } },
+    { upsert: true, new: true }
+  );
+};

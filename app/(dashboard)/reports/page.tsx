@@ -1,14 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, BarChart3, Package, Users, Tag, Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import api from "@/lib/api";
 
 export default function ReportsPage() {
   const [exporting, setExporting] = useState<string | null>(null);
+  const [sales, setSales] = useState<any>(null);
+  const [inventory, setInventory] = useState<any>(null);
+  const [customers, setCustomers] = useState<any>(null);
+  const [coupons, setCoupons] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const [sRes, iRes, cRes, coRes] = await Promise.all([
+          api.get("/reports/sales"),
+          api.get("/reports/inventory"),
+          api.get("/reports/customers"),
+          api.get("/reports/coupons"),
+        ]);
+        setSales(sRes.data.data);
+        setInventory(iRes.data.data);
+        setCustomers(cRes.data.data);
+        setCoupons(coRes.data.data);
+      } catch (err) {
+        console.error("Failed to load reports", err);
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, []);
 
   const handleExport = async (format: string) => {
     setExporting(format);
@@ -23,6 +50,14 @@ export default function ReportsPage() {
     } catch (err) { console.error("Export failed", err); }
     setExporting(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -54,9 +89,9 @@ export default function ReportsPage() {
         <TabsContent value="sales" className="pt-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { title: "Total Revenue", value: "₹0", desc: "Lifetime revenue" },
-              { title: "Total Orders", value: "0", desc: "All orders" },
-              { title: "Avg Order Value", value: "₹0", desc: "Per order average" },
+              { title: "Total Revenue", value: formatCurrency(sales?.summary?.totalRevenue || 0), desc: "Lifetime revenue" },
+              { title: "Total Orders", value: String(sales?.summary?.totalOrders || 0), desc: "Delivered orders" },
+              { title: "Avg Order Value", value: formatCurrency(sales?.summary?.avgOrderValue || 0), desc: "Per order average" },
             ].map((stat) => (
               <Card key={stat.title}>
                 <CardContent className="p-6">
@@ -70,7 +105,18 @@ export default function ReportsPage() {
           <Card className="mt-4">
             <CardHeader><CardTitle>Sales Report</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-sm text-zinc-500 py-8 text-center">Sales data will appear here. Connect to your backend to view reports.</p>
+              {sales?.dailySales?.length > 0 ? (
+                <div className="space-y-2">
+                  {sales.dailySales.map((d: any) => (
+                    <div key={d._id} className="flex justify-between text-sm">
+                      <span>{d._id}</span>
+                      <span className="font-medium">{d.orders} orders — {formatCurrency(d.revenue)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-500 py-8 text-center">No sales data yet.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -78,9 +124,9 @@ export default function ReportsPage() {
         <TabsContent value="inventory" className="pt-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { title: "Total Products", value: "0" },
-              { title: "Low Stock Items", value: "0" },
-              { title: "Out of Stock", value: "0" },
+              { title: "Total Products", value: String(inventory?.totalProducts || 0) },
+              { title: "Low Stock Items", value: String(inventory?.lowStock || 0) },
+              { title: "Out of Stock", value: String(inventory?.outOfStock || 0) },
             ].map((stat) => (
               <Card key={stat.title}>
                 <CardContent className="p-6">
@@ -95,9 +141,9 @@ export default function ReportsPage() {
         <TabsContent value="customers" className="pt-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { title: "Total Customers", value: "0" },
-              { title: "Active Customers", value: "0" },
-              { title: "Returning", value: "0" },
+              { title: "Total Customers", value: String(customers?.totalCustomers || 0) },
+              { title: "Active Customers", value: String(customers?.activeCustomers || 0) },
+              { title: "Returning", value: String(customers?.returningCustomers || 0) },
             ].map((stat) => (
               <Card key={stat.title}>
                 <CardContent className="p-6">
@@ -112,9 +158,9 @@ export default function ReportsPage() {
         <TabsContent value="coupons" className="pt-4">
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { title: "Total Coupons", value: "0" },
-              { title: "Active Coupons", value: "0" },
-              { title: "Expired", value: "0" },
+              { title: "Total Coupons", value: String(coupons?.totalCoupons || 0) },
+              { title: "Active Coupons", value: String(coupons?.activeCoupons || 0) },
+              { title: "Expired", value: String(coupons?.expiredCoupons || 0) },
             ].map((stat) => (
               <Card key={stat.title}>
                 <CardContent className="p-6">

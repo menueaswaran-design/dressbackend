@@ -42,7 +42,7 @@ exports.getSalesReport = async (startDate, endDate) => {
 exports.getInventoryReport = async () => {
   const [totalProducts, lowStock, outOfStock, categoryStock] = await Promise.all([
     Product.countDocuments({ isDeleted: false }),
-    Product.countDocuments({ isDeleted: false, stock: { $gt: 0, $lte: '$lowStockLimit' } }),
+    Product.countDocuments({ isDeleted: false, $expr: { $and: [ { $gt: ['$stock', 0] }, { $lte: ['$stock', '$lowStockLimit'] } ] } }),
     Product.countDocuments({ isDeleted: false, stock: 0 }),
     Product.aggregate([
       { $match: { isDeleted: false } },

@@ -16,7 +16,7 @@ const bannerSchema = new mongoose.Schema({
 const homepageSectionSchema = new mongoose.Schema({
   sectionType: {
     type: String,
-    enum: ['hero_banner', 'announcement_bar', 'categories', 'featured_collections', 'promotional_banner', 'instagram', 'newsletter'],
+    enum: ['hero_banner', 'announcement_bar', 'categories', 'featured_collections', 'promotional_banner', 'brand_story', 'instagram', 'newsletter'],
     required: true,
     unique: true,
   },
@@ -48,7 +48,21 @@ const homepageSectionSchema = new mongoose.Schema({
     subHeading: { type: String },
     buttonText: { type: String },
     buttonLink: { type: String },
+    backgroundColor: { type: String, default: '#111827' },
+    textColor: { type: String, default: '#ffffff' },
+    collection: { type: mongoose.Schema.Types.ObjectId, ref: 'Collection' },
     displayOrder: { type: Number },
+    isActive: { type: Boolean, default: false },
+  },
+  brandStory: {
+    heading: { type: String, default: 'Designed for the Modern Individual' },
+    subHeading: { type: String, default: 'Our Story' },
+    description: { type: String },
+    buttonText: { type: String, default: 'Explore Collection' },
+    buttonLink: { type: String, default: '/shop' },
+    secondaryButtonText: { type: String, default: 'Learn More' },
+    secondaryButtonLink: { type: String, default: '/about' },
+    image: { type: String },
     isActive: { type: Boolean, default: false },
   },
   instagram: {

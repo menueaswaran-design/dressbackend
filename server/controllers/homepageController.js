@@ -34,13 +34,25 @@ exports.updateNewsletter = catchAsync(async (req, res) => {
 });
 
 exports.saveAll = catchAsync(async (req, res) => {
-  const { announcement, banners, newsletter } = req.body;
+  const { announcement, banners, newsletter, promotionalBanner, brandStory } = req.body;
   const operations = [];
   if (banners) operations.push(homepageService.updateHeroBanners({ heroBanners: banners }));
   if (announcement) operations.push(homepageService.updateAnnouncementBar(announcement));
   if (newsletter) operations.push(homepageService.updateNewsletter(newsletter));
+  if (promotionalBanner) operations.push(homepageService.updatePromotionalBanner(promotionalBanner));
+  if (brandStory) operations.push(homepageService.updateBrandStory(brandStory));
   await Promise.all(operations);
   ApiResponse.success(res, null, 'Homepage saved');
+});
+
+exports.updatePromotionalBanner = catchAsync(async (req, res) => {
+  const section = await homepageService.updatePromotionalBanner(req.body);
+  ApiResponse.success(res, { section }, 'Promotional banner updated');
+});
+
+exports.updateBrandStory = catchAsync(async (req, res) => {
+  const section = await homepageService.updateBrandStory(req.body);
+  ApiResponse.success(res, { section }, 'Brand story updated');
 });
 
 exports.updateInstagram = catchAsync(async (req, res) => {

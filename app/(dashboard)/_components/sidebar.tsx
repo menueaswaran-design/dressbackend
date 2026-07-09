@@ -38,7 +38,6 @@ const navItems: NavItem[] = [
     icon: FileText,
     children: [
       { label: "Homepage", href: "/homepage" },
-      { label: "CMS Pages", href: "/cms" },
       { label: "Navigation", href: "/navigation" },
     ],
   },
