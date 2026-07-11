@@ -9,11 +9,14 @@ import fs from 'fs';
 let initialized = false;
 
 export async function ensureInit() {
-  if (initialized) return;
+  if (initialized && mongoose.connection.readyState === 1) return;
+  if (initialized && mongoose.connection.readyState !== 1) {
+    initialized = false;
+  }
 
   if (process.env.MONGODB_URI && mongoose.connection.readyState !== 1) {
     try {
-      await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+      await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000, connectTimeoutMS: 15000 });
     } catch (e: any) {
       console.warn('MongoDB connection failed:', e.message);
     }

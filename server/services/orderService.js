@@ -1,10 +1,18 @@
 const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Product = require('../models/Product');
+const productService = require('./productService');
 const { generateOrderNumber, getPaginationMeta } = require('../utils/helpers');
 
 exports.createOrder = async (data) => {
   const orderNumber = generateOrderNumber();
+
+  for (const item of data.items || []) {
+    const qty = item.quantity || 1;
+    const variantSize = item.variant?.size;
+    await productService.decrementStock(item.product, qty, variantSize);
+  }
+
   const order = await Order.create({ ...data, orderNumber });
 
   await Customer.findByIdAndUpdate(data.customer, {
@@ -28,11 +36,26 @@ exports.createOrderFromCart = async (customer, shippingAddress, paymentMethod) =
   for (const item of customer.cart) {
     const product = productMap[item.product?.toString() || item._id?.toString()];
     if (!product) throw require('../utils/ApiError').badRequest(`Product not found: ${item.name}`);
-    const variant = product.variants?.find((v) => v.size === item.size);
-    const availableStock = variant?.stock ?? product.stock;
+    let availableStock = product.stock;
+    if (product.variants?.length > 0) {
+      for (const v of product.variants) {
+        if (v.sizes?.length > 0) {
+          const sizeItem = v.sizes.find((s) => s.size === item.size);
+          if (sizeItem) { availableStock = sizeItem.stock; break; }
+        } else if (v.size === item.size) {
+          availableStock = v.stock ?? product.stock;
+          break;
+        }
+      }
+    }
     if (item.quantity > availableStock) {
       throw require('../utils/ApiError').badRequest(`Insufficient stock for ${product.name} (${item.size || 'N/A'})`);
     }
+  }
+
+  for (const item of customer.cart) {
+    const product = productMap[item.product?.toString() || item._id?.toString()];
+    await productService.decrementStock(product._id, item.quantity, item.size);
   }
 
   const subtotal = customer.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -131,6 +154,17 @@ exports.getCustomerOrder = async (customerId, orderId) => {
 };
 
 exports.updateOrderStatus = async (id, status, notes) => {
+  const restoreStatuses = ['cancelled', 'returned', 'refunded'];
+  const previousOrder = await Order.findById(id);
+  if (!previousOrder) throw require('../utils/ApiError').notFound('Order not found');
+
+  if (restoreStatuses.includes(status) && !restoreStatuses.includes(previousOrder.status)) {
+    for (const item of previousOrder.items || []) {
+      const variantSize = item.variant?.size;
+      await productService.incrementStock(item.product, item.quantity, variantSize);
+    }
+  }
+
   const update = { status };
   if (notes) update.notes = notes;
   return Order.findByIdAndUpdate(id, { $set: update }, { new: true });
@@ -156,7 +190,7 @@ exports.getDashboardStats = async () => {
     Order.countDocuments({ status: 'delivered', isDeleted: false }),
     Order.countDocuments({ status: 'cancelled', isDeleted: false }),
     Order.aggregate([{ $match: { isDeleted: false, status: 'delivered' } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
-    Order.aggregate([{ $match: { isDeleted: false, createdAt: { $gte: today } } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+    Order.aggregate([{ $match: { isDeleted: false, status: 'delivered', createdAt: { $gte: today } } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
     Order.aggregate([
       { $match: { isDeleted: false } },
       { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 }, revenue: { $sum: '$total' } } },

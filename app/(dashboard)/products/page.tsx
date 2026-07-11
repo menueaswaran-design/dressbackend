@@ -17,14 +17,18 @@ export default function ProductsPage() {
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
 
   const fetchProducts = async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await api.get("/products", { params: { page, limit: 10, search } });
       setProducts(res.data.data);
       setPagination(res.data.pagination);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to load products";
+      setError(msg);
       console.error(err);
     } finally {
       setLoading(false);
@@ -93,6 +97,9 @@ export default function ProductsPage() {
         </div>
         <Button onClick={() => router.push("/products/new")}><Plus className="h-4 w-4" /> Add Product</Button>
       </div>
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>
+      )}
       <DataTable
         columns={columns}
         data={products}

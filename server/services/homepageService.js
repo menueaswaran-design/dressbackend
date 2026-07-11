@@ -1,7 +1,7 @@
 const HomepageSection = require('../models/HomepageSection');
 
 exports.getAllSections = async () => {
-  return HomepageSection.find({ isActive: true }).sort({ displayOrder: 1 });
+  return HomepageSection.find({}).sort({ displayOrder: 1 });
 };
 
 exports.getSectionByType = async (sectionType) => {

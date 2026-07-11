@@ -547,11 +547,13 @@ def('homepage', ['instagram'], ['PUT'], async (ctx) => {
 }, { roles: ['super_admin', 'admin'] });
 
 def('homepage', [], ['POST'], async (ctx) => {
-  const { announcement, banners, newsletter } = ctx.body;
+  const { announcement, banners, newsletter, promotionalBanner, brandStory } = ctx.body;
   const operations = [];
   if (banners) operations.push(homepageService.updateHeroBanners({ heroBanners: banners }));
   if (announcement) operations.push(homepageService.updateAnnouncementBar(announcement));
   if (newsletter) operations.push(homepageService.updateNewsletter(newsletter));
+  if (promotionalBanner) operations.push(homepageService.updatePromotionalBanner(promotionalBanner));
+  if (brandStory) operations.push(homepageService.updateBrandStory(brandStory));
   await Promise.all(operations);
   return successResponse(null, 'Homepage saved');
 }, { roles: ['super_admin', 'admin'] });

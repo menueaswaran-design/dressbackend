@@ -1,12 +1,17 @@
 const mongoose = require('mongoose');
 
-const variantSchema = new mongoose.Schema({
-  sku: { type: String, required: true },
-  color: { type: String },
+const variantSizeSchema = new mongoose.Schema({
   size: { type: String },
   price: { type: Number, required: true },
   stock: { type: Number, default: 0 },
-  image: { type: String },
+  sku: { type: String },
+});
+
+const variantSchema = new mongoose.Schema({
+  name: { type: String },
+  images: [{ type: String }],
+  primaryImage: { type: String },
+  sizes: [variantSizeSchema],
   isActive: { type: Boolean, default: true },
 });
 

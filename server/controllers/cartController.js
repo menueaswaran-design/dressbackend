@@ -13,25 +13,47 @@ exports.addToCart = catchAsync(async (req, res) => {
   const product = await Product.findById(productId);
   if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
 
+  let variantPrice = product.sellingPrice;
+  let variantStock = product.stock;
+  let variantImage = product.images?.[0]?.url || '';
+  if (size && product.variants?.length > 0) {
+    for (const v of product.variants) {
+      if (v.sizes?.length > 0) {
+        const sizeItem = v.sizes.find((s) => s.size === size);
+        if (sizeItem) {
+          variantPrice = sizeItem.price;
+          variantStock = sizeItem.stock;
+          variantImage = v.primaryImage || v.images?.[0] || variantImage;
+          break;
+        }
+      } else if (v.size === size) {
+        variantPrice = v.price || variantPrice;
+        variantStock = v.stock ?? variantStock;
+        variantImage = v.image || variantImage;
+        break;
+      }
+    }
+  }
+
   const existingIndex = req.customer.cart.findIndex(
-    (item) => item.product.toString() === productId && item.size === size && item.color === color
+    (item) => item.product.toString() === productId && item.size === size && item.color === (color || '')
   );
 
   if (existingIndex > -1) {
     req.customer.cart[existingIndex].quantity = Math.min(
       req.customer.cart[existingIndex].quantity + quantity,
-      product.stock || 99
+      variantStock || 99
     );
   } else {
     req.customer.cart.push({
       product: productId,
       name: product.name,
-      price: product.sellingPrice,
+      price: variantPrice,
       quantity,
       size,
-      color,
-      image: product.images?.[0]?.url || '',
-      stock: product.stock || 99,
+      color: color || '',
+      image: variantImage,
+      stock: variantStock || 99,
     });
   }
 

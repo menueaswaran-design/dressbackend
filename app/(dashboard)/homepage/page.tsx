@@ -60,7 +60,7 @@ export default function HomepagePage() {
           api.get("/homepage/sections"),
           api.get("/collections"),
         ]);
-        const sections = sectionsRes.data?.sections || [];
+        const sections = sectionsRes.data?.data?.sections || [];
         const promo = sections.find((s: any) => s.sectionType === "promotional_banner");
         if (promo?.promotionalBanner) {
           setPromoBanner((prev) => ({ ...prev, ...promo.promotionalBanner, collection: promo.promotionalBanner.collection?._id || promo.promotionalBanner.collection || "" }));
@@ -68,6 +68,20 @@ export default function HomepagePage() {
         const story = sections.find((s: any) => s.sectionType === "brand_story");
         if (story?.brandStory) {
           setBrandStory((prev) => ({ ...prev, ...story.brandStory }));
+        }
+        const hero = sections.find((s: any) => s.sectionType === "hero_banner");
+        if (hero?.heroBanners?.length) {
+          setBanners(hero.heroBanners);
+        }
+        const announce = sections.find((s: any) => s.sectionType === "announcement_bar");
+        if (announce?.announcementBar) {
+          const bar = announce.announcementBar;
+          setAnnouncement((prev) => ({ ...prev, ...bar, enabled: bar.isActive ?? bar.enabled ?? prev.enabled }));
+        }
+        const nl = sections.find((s: any) => s.sectionType === "newsletter");
+        if (nl?.newsletter) {
+          const nlData = nl.newsletter;
+          setNewsletter((prev) => ({ ...prev, ...nlData, enabled: nlData.isActive ?? nlData.enabled ?? prev.enabled }));
         }
         setCollections(collectionsRes.data?.collections || collectionsRes.data?.data || []);
       } catch (err) {

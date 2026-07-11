@@ -15,15 +15,18 @@ export interface Product {
   name: string;
   sku: string;
   slug: string;
+  description?: string;
   category: { _id: string; name: string };
   collection?: { _id: string; name: string };
   brand?: string;
   gender?: string;
   tags: string[];
+  labels: string[];
   mrp: number;
   sellingPrice: number;
   costPrice?: number;
   discount: number;
+  tax?: number;
   stock: number;
   lowStockLimit: number;
   images: { url: string; type: string; isPrimary: boolean }[];

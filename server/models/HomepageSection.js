@@ -86,6 +86,7 @@ const homepageSectionSchema = new mongoose.Schema({
   },
 }, {
   timestamps: true,
+  suppressReservedKeysWarning: true,
 });
 
 homepageSectionSchema.index({ sectionType: 1 });

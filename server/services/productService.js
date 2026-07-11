@@ -5,6 +5,10 @@ exports.createProduct = async (data) => {
   const slug = data.slug || slugify(data.name);
   const sku = data.sku || generateSKU(data.name);
 
+  if (data.primaryImage && (!data.images || data.images.length === 0)) {
+    data.images = [{ url: data.primaryImage, type: 'front', isPrimary: true, sortOrder: 0 }];
+  }
+
   const product = await Product.create({ ...data, slug, sku });
   return product;
 };
@@ -54,6 +58,11 @@ exports.updateProduct = async (id, data) => {
   if (data.name && !data.slug) {
     data.slug = slugify(data.name);
   }
+
+  if (data.primaryImage && (!data.images || data.images.length === 0)) {
+    data.images = [{ url: data.primaryImage, type: 'front', isPrimary: true, sortOrder: 0 }];
+  }
+
   return Product.findByIdAndUpdate(id, { $set: data }, { new: true, runValidators: true });
 };
 
@@ -84,4 +93,70 @@ exports.getLowStockProducts = async (limit = 10) => {
 
 exports.getOutOfStockProducts = async (limit = 10) => {
   return Product.find({ stock: 0, isDeleted: false }).limit(limit);
+};
+
+function findSizeInVariant(variant, size) {
+  if (variant.sizes?.length > 0) {
+    return variant.sizes.find((s) => s.size === size);
+  }
+  return null;
+}
+
+exports.decrementStock = async (productId, quantity, variantSize) => {
+  const product = await Product.findById(productId);
+  if (!product) throw require('../utils/ApiError').notFound('Product not found');
+
+  if (variantSize && product.variants?.length > 0) {
+    let found = false;
+    for (const variant of product.variants) {
+      const sizeItem = findSizeInVariant(variant, variantSize);
+      if (sizeItem) {
+        if (sizeItem.stock < quantity) throw require('../utils/ApiError').badRequest(`Insufficient stock for ${product.name} (${variantSize})`);
+        sizeItem.stock = Math.max(0, sizeItem.stock - quantity);
+        found = true;
+        break;
+      }
+      if (variant.size === variantSize) {
+        if (variant.stock < quantity) throw require('../utils/ApiError').badRequest(`Insufficient stock for ${product.name} (${variantSize})`);
+        variant.stock = Math.max(0, variant.stock - quantity);
+        found = true;
+        break;
+      }
+    }
+    if (!found) throw require('../utils/ApiError').badRequest(`Size "${variantSize}" not found in any variant`);
+  } else {
+    if (product.stock < quantity) throw require('../utils/ApiError').badRequest(`Insufficient stock for ${product.name}`);
+    product.stock = Math.max(0, product.stock - quantity);
+  }
+
+  await product.save();
+  return product;
+};
+
+exports.incrementStock = async (productId, quantity, variantSize) => {
+  const product = await Product.findById(productId);
+  if (!product) throw require('../utils/ApiError').notFound('Product not found');
+
+  if (variantSize && product.variants?.length > 0) {
+    let found = false;
+    for (const variant of product.variants) {
+      const sizeItem = findSizeInVariant(variant, variantSize);
+      if (sizeItem) {
+        sizeItem.stock += quantity;
+        found = true;
+        break;
+      }
+      if (variant.size === variantSize) {
+        variant.stock += quantity;
+        found = true;
+        break;
+      }
+    }
+    if (!found) throw require('../utils/ApiError').badRequest(`Size "${variantSize}" not found in any variant`);
+  } else {
+    product.stock += quantity;
+  }
+
+  await product.save();
+  return product;
 };
